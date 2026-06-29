@@ -1,4 +1,5 @@
 from pathlib import Path
+from urllib.request import urlretrieve
 
 import streamlit as st
 
@@ -13,22 +14,27 @@ PAPERS = [
     {
         "title": "Attention Is All You Need",
         "file": "attention_is_all_you_need.pdf",
+        "url": "https://arxiv.org/pdf/1706.03762",
     },
     {
         "title": "BERT",
         "file": "bert.pdf",
+        "url": "https://arxiv.org/pdf/1810.04805",
     },
     {
         "title": "Retrieval-Augmented Generation",
         "file": "retrieval_augmented_generation.pdf",
+        "url": "https://arxiv.org/pdf/2005.11401",
     },
     {
         "title": "LoRA",
         "file": "lora.pdf",
+        "url": "https://arxiv.org/pdf/2106.09685",
     },
     {
         "title": "Chain-of-Thought Prompting",
         "file": "chain_of_thought_prompting.pdf",
+        "url": "https://arxiv.org/pdf/2201.11903",
     },
 ]
 
@@ -42,8 +48,24 @@ SAMPLE_QUESTIONS = [
 ]
 
 
+def ensure_sample_papers() -> None:
+    """Download sample papers if they are not already available."""
+    paper_dir = Path("data/papers")
+    paper_dir.mkdir(parents=True, exist_ok=True)
+
+    for paper in PAPERS:
+        path = paper_dir / paper["file"]
+
+        if path.exists():
+            continue
+
+        urlretrieve(paper["url"], path)
+
+
 @st.cache_resource(show_spinner="Preparing the research index...")
 def build_paperlens_index():
+    ensure_sample_papers()
+
     paper_inputs = []
 
     for paper in PAPERS:
@@ -74,6 +96,8 @@ def build_paperlens_index():
         "embedding_model": embedding_model,
         "index": index,
         "reranker": reranker,
+        "paper_count": len(paper_inputs),
+        "chunk_count": len(chunks),
     }
 
 
@@ -94,15 +118,17 @@ with st.sidebar:
     st.divider()
     st.write("Retrieval: FAISS + Sentence Transformers")
     st.write("Reranking: Cross-Encoder")
-    st.write("Evaluation: 15 questions across 5 papers")
+    st.write("Benchmark: 15 questions across 5 papers")
 
 state = build_paperlens_index()
 
 if state is None:
-    st.warning(
-        "No paper PDFs were found in data/papers. Add the sample PDFs before running the app."
-    )
+    st.warning("PaperLens could not prepare the sample paper collection.")
     st.stop()
+
+st.info(
+    f"Indexed {state['paper_count']} papers into {state['chunk_count']} searchable chunks."
+)
 
 selected_question = st.selectbox(
     "Try a sample question",
