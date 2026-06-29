@@ -113,6 +113,13 @@ def build_index_from_papers(paper_inputs: list[dict]):
         return None
 
     pages = read_many_pdfs(paper_inputs)
+    low_text_pages = [
+        page for page in pages
+        if len(page["text"].strip()) < 100
+    ]
+
+    quality_warning = len(low_text_pages) > max(3, len(pages) * 0.25)
+    
     chunks = make_text_chunks(pages=pages, chunk_size=220, overlap=40)
 
     embedding_model = load_embedding_model()
@@ -130,6 +137,8 @@ def build_index_from_papers(paper_inputs: list[dict]):
         "reranker": reranker,
         "paper_count": len(paper_inputs),
         "chunk_count": len(chunks),
+        "page_count": len(pages),
+        "quality_warning": quality_warning,
     }
 
 
@@ -177,6 +186,19 @@ if paper_mode == "Upload PDFs":
 else:
     state = build_sample_index()
 
+available_papers = sorted({chunk["paper_title"] for chunk in state["chunks"]})
+
+selected_papers = st.multiselect(
+    "Search within papers",
+    available_papers,
+    default=available_papers,
+)
+
+searchable_chunks = [
+    chunk for chunk in state["chunks"]
+    if chunk["paper_title"] in selected_papers
+]
+
 if state is None:
     if paper_mode == "Upload PDFs":
         st.warning("Upload at least one PDF to build a research index.")
@@ -189,7 +211,13 @@ with ask_tab:
     st.info(
         f"Indexed {state['paper_count']} papers into {state['chunk_count']} searchable chunks."
     )
+    st.caption(f"Read {state['page_count']} pages.")
 
+    if state.get("quality_warning"):
+        st.warning(
+            "Some pages had very little extractable text. If this is a scanned PDF, "
+            "PaperLens may need OCR support for better results."
+        )
     selected_question = st.selectbox(
         "Try a sample question",
         SAMPLE_QUESTIONS,
@@ -207,12 +235,19 @@ with ask_tab:
     ["Hybrid search", "Semantic search"],
     horizontal=True,
     )
-
+    if "question_history" not in st.session_state:
+        st.session_state.question_history = []
+    
+    if st.session_state.question_history:
+        st.caption("Recent questions")
+        for old_query in st.session_state.question_history:
+            st.write(f"- {old_query}")
+    
     if st.button("Search Papers", type="primary"):
         if search_mode == "Hybrid search":
             retrieved = hybrid_search_chunks(
                 query=query,
-                chunks=state["chunks"],
+                chunks=searchable_chunks,
                 semantic_model=state["embedding_model"],
                 semantic_index=state["index"],
                 bm25_index=state["bm25_index"],
@@ -221,7 +256,7 @@ with ask_tab:
         else:
             retrieved = search_chunks(
                 query=query,
-                chunks=state["chunks"],
+                chunks=searchable_chunks,
                 model=state["embedding_model"],
                 index=state["index"],
                 top_k=10,
@@ -240,7 +275,10 @@ with ask_tab:
             min_score=1.0,
             max_chunks=3,
         )
-
+        if query not in st.session_state.question_history:
+            st.session_state.question_history.insert(0, query)
+            st.session_state.question_history = st.session_state.question_history[:5]
+        
         from src.answer_writer import evidence_strength
 
         strength = evidence_strength(reranked)
