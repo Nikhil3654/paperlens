@@ -1,3 +1,4 @@
+import tempfile
 from pathlib import Path
 from urllib.request import urlretrieve
 
@@ -61,9 +62,32 @@ def ensure_sample_papers() -> None:
 
         urlretrieve(paper["url"], path)
 
+def save_uploaded_papers(uploaded_files) -> list[dict]:
+    """Save uploaded PDFs temporarily and return paper inputs."""
+    paper_inputs = []
+
+    temp_dir = Path(tempfile.mkdtemp())
+
+    for uploaded_file in uploaded_files:
+        safe_name = uploaded_file.name.replace(" ", "_")
+        path = temp_dir / safe_name
+
+        path.write_bytes(uploaded_file.getbuffer())
+
+        title = Path(uploaded_file.name).stem.replace("_", " ").replace("-", " ").title()
+
+        paper_inputs.append(
+            {
+                "path": str(path),
+                "title": title,
+            }
+        )
+
+    return paper_inputs
 
 @st.cache_resource(show_spinner="Preparing the research index...")
-def build_paperlens_index():
+@st.cache_resource(show_spinner="Preparing the research index...")
+def build_sample_index():
     ensure_sample_papers()
 
     paper_inputs = []
@@ -79,6 +103,11 @@ def build_paperlens_index():
                 }
             )
 
+    return build_index_from_papers(paper_inputs)
+
+
+def build_index_from_papers(paper_inputs: list[dict]):
+    """Build a searchable paper index from PDF inputs."""
     if not paper_inputs:
         return None
 
@@ -120,10 +149,36 @@ with st.sidebar:
     st.write("Reranking: Cross-Encoder")
     st.write("Benchmark: 15 questions across 5 papers")
 
-state = build_paperlens_index()
+with st.sidebar:
+    st.divider()
+    paper_mode = st.radio(
+        "Paper source",
+        ["Sample papers", "Upload PDFs"],
+    )
+
+uploaded_files = []
+
+if paper_mode == "Upload PDFs":
+    uploaded_files = st.file_uploader(
+        "Upload one or more research papers",
+        type=["pdf"],
+        accept_multiple_files=True,
+    )
+
+    if uploaded_files:
+        with st.spinner("Reading uploaded papers and building search index..."):
+            uploaded_inputs = save_uploaded_papers(uploaded_files)
+            state = build_index_from_papers(uploaded_inputs)
+    else:
+        state = None
+else:
+    state = build_sample_index()
 
 if state is None:
-    st.warning("PaperLens could not prepare the sample paper collection.")
+    if paper_mode == "Upload PDFs":
+        st.warning("Upload at least one PDF to build a research index.")
+    else:
+        st.warning("PaperLens could not prepare the sample paper collection.")
     st.stop()
 
 st.info(
