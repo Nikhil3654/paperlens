@@ -180,61 +180,104 @@ if state is None:
     else:
         st.warning("PaperLens could not prepare the sample paper collection.")
     st.stop()
+ask_tab, benchmark_tab, about_tab = st.tabs(["Ask", "Benchmark", "About"])
 
-st.info(
-    f"Indexed {state['paper_count']} papers into {state['chunk_count']} searchable chunks."
-)
-
-selected_question = st.selectbox(
-    "Try a sample question",
-    SAMPLE_QUESTIONS,
-)
-
-custom_question = st.text_input(
-    "Or ask your own question",
-    placeholder="Ask about one of the papers...",
-)
-
-query = custom_question.strip() or selected_question
-
-if st.button("Search Papers", type="primary"):
-    retrieved = search_chunks(
-        query=query,
-        chunks=state["chunks"],
-        model=state["embedding_model"],
-        index=state["index"],
-        top_k=10,
+with ask_tab:
+    st.info(
+        f"Indexed {state['paper_count']} papers into {state['chunk_count']} searchable chunks."
     )
 
-    reranked = rerank_chunks(
-        query=query,
-        chunks=retrieved,
-        reranker=state["reranker"],
-        top_k=5,
+    selected_question = st.selectbox(
+        "Try a sample question",
+        SAMPLE_QUESTIONS,
     )
 
-    answer = answer_from_evidence(
-        query=query,
-        chunks=reranked,
-        min_score=1.0,
-        max_chunks=3,
+    custom_question = st.text_input(
+        "Or ask your own question",
+        placeholder="Ask about one of the papers...",
     )
 
-    st.subheader("Answer")
-    st.write(answer["answer"])
+    query = custom_question.strip() or selected_question
 
-    st.subheader("Citations")
-    if answer["citations"]:
-        for citation in answer["citations"]:
-            st.write(f"- {citation['citation']}")
-    else:
-        st.write("No strong citations found.")
+    if st.button("Search Papers", type="primary"):
+        retrieved = search_chunks(
+            query=query,
+            chunks=state["chunks"],
+            model=state["embedding_model"],
+            index=state["index"],
+            top_k=10,
+        )
 
-    st.subheader("Evidence")
-    for rank, chunk in enumerate(reranked, start=1):
-        with st.expander(
-            f"{rank}. {chunk['paper_title']} · page {chunk['page_number']}"
-        ):
-            st.write(f"Search score: {chunk.get('search_score', 0):.3f}")
-            st.write(f"Rerank score: {chunk.get('rerank_score', 0):.3f}")
-            st.write(chunk["text"])
+        reranked = rerank_chunks(
+            query=query,
+            chunks=retrieved,
+            reranker=state["reranker"],
+            top_k=5,
+        )
+
+        answer = answer_from_evidence(
+            query=query,
+            chunks=reranked,
+            min_score=1.0,
+            max_chunks=3,
+        )
+
+        from src.answer_writer import evidence_strength
+
+        strength = evidence_strength(reranked)
+
+        st.subheader("Answer")
+
+        if strength == "strong":
+            st.success("Evidence strength: Strong")
+        elif strength == "moderate":
+            st.warning("Evidence strength: Moderate")
+        else:
+            st.error("Evidence strength: Weak")
+
+        st.write(answer["answer"])
+
+        st.subheader("Citations")
+        if answer["citations"]:
+            for citation in answer["citations"]:
+                st.write(f"- {citation['citation']}")
+        else:
+            st.write("No strong citations found.")
+
+        st.subheader("Evidence")
+        for rank, chunk in enumerate(reranked, start=1):
+            with st.expander(
+                f"{rank}. {chunk['paper_title']} · page {chunk['page_number']}"
+            ):
+                st.write(f"Search score: {chunk.get('search_score', 0):.3f}")
+                st.write(f"Rerank score: {chunk.get('rerank_score', 0):.3f}")
+                st.write(chunk["text"])
+
+with benchmark_tab:
+    st.subheader("Retrieval Benchmark")
+
+    st.metric("Benchmark Questions", "15")
+    st.metric("Top-1 Paper Routing", "100%")
+    st.metric("Strict Page-Level Citation Hit Rate", "73.3%")
+
+    st.write(
+        "PaperLens was evaluated on 15 manually written questions across five AI research papers. "
+        "The system routed every question to the correct paper, while exact expected-page matching "
+        "was intentionally measured as a stricter citation-quality metric."
+    )
+
+with about_tab:
+    st.subheader("About PaperLens")
+
+    st.write(
+        "PaperLens is a citation-grounded research assistant for technical papers. "
+        "It reads PDFs, splits them into page-aware chunks, builds a FAISS search index, "
+        "reranks evidence with a cross-encoder, and answers using cited source text."
+    )
+
+    st.write("Built with free tools:")
+    st.write("- Streamlit")
+    st.write("- Hugging Face Spaces free CPU")
+    st.write("- Sentence Transformers")
+    st.write("- FAISS")
+    st.write("- pypdf")

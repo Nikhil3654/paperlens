@@ -107,3 +107,18 @@ def format_answer_for_display(answer: Dict) -> str:
     lines.append(f"Confidence: {answer['confidence']}")
 
     return "\n".join(lines)
+
+def evidence_strength(chunks: List[Dict]) -> str:
+    """Estimate how strong the retrieved evidence is."""
+    if not chunks:
+        return "weak"
+
+    best_score = chunks[0].get("rerank_score", chunks[0].get("search_score", 0.0))
+
+    if best_score >= 3.0:
+        return "strong"
+
+    if best_score >= 1.0:
+        return "moderate"
+
+    return "weak"
