@@ -17,6 +17,15 @@ def page_hit(results: List[Dict], expected_pages: List[int]) -> bool:
     return any(page in retrieved_pages for page in expected_pages)
 
 
+def paper_hit(results: List[Dict], expected_paper: str) -> bool:
+    """Check whether any retrieved result comes from the expected paper."""
+    if not expected_paper:
+        return False
+
+    retrieved_papers = {result["paper_title"] for result in results}
+    return expected_paper in retrieved_papers
+
+
 def evaluate_retrieval(
     questions: pd.DataFrame,
     chunks: List[Dict],
@@ -29,7 +38,7 @@ def evaluate_retrieval(
     final_k: int = 5,
 ) -> pd.DataFrame:
     """
-    Evaluate whether retrieval finds expected source pages.
+    Evaluate whether retrieval finds expected papers and source pages.
 
     If reranker and rerank_fn are provided, evaluation uses reranked results.
     Otherwise it uses the raw search results.
@@ -38,6 +47,7 @@ def evaluate_retrieval(
 
     for _, row in questions.iterrows():
         question = row["question"]
+        expected_paper = row.get("expected_paper", "")
         expected_pages = parse_expected_pages(row["expected_pages"])
 
         retrieved = search_fn(
@@ -58,19 +68,28 @@ def evaluate_retrieval(
         else:
             final_results = retrieved[:final_k]
 
-        hit = page_hit(final_results, expected_pages)
+        has_paper_hit = paper_hit(final_results, expected_paper)
+        has_page_hit = page_hit(final_results, expected_pages)
+        has_full_hit = has_paper_hit and has_page_hit
 
         best_result = final_results[0] if final_results else {}
 
         rows.append(
             {
                 "question": question,
+                "expected_paper": expected_paper,
                 "expected_pages": expected_pages,
-                "top_k_hit": hit,
+                "paper_hit": has_paper_hit,
+                "page_hit": has_page_hit,
+                "full_hit": has_full_hit,
+                "best_paper": best_result.get("paper_title"),
                 "best_page": best_result.get("page_number"),
                 "best_chunk_id": best_result.get("chunk_id"),
                 "best_search_score": best_result.get("search_score"),
                 "best_rerank_score": best_result.get("rerank_score"),
+                "retrieved_papers": [
+                    result["paper_title"] for result in final_results
+                ],
                 "retrieved_pages": [
                     result["page_number"] for result in final_results
                 ],
@@ -88,14 +107,24 @@ def summarize_retrieval_results(results: pd.DataFrame) -> Dict:
     if total_questions == 0:
         return {
             "total_questions": 0,
-            "top_k_hits": 0,
-            "top_k_hit_rate": 0.0,
+            "paper_hits": 0,
+            "page_hits": 0,
+            "full_hits": 0,
+            "paper_hit_rate": 0.0,
+            "page_hit_rate": 0.0,
+            "full_hit_rate": 0.0,
         }
 
-    top_k_hits = int(results["top_k_hit"].sum())
+    paper_hits = int(results["paper_hit"].sum())
+    page_hits = int(results["page_hit"].sum())
+    full_hits = int(results["full_hit"].sum())
 
     return {
         "total_questions": total_questions,
-        "top_k_hits": top_k_hits,
-        "top_k_hit_rate": top_k_hits / total_questions,
+        "paper_hits": paper_hits,
+        "page_hits": page_hits,
+        "full_hits": full_hits,
+        "paper_hit_rate": paper_hits / total_questions,
+        "page_hit_rate": page_hits / total_questions,
+        "full_hit_rate": full_hits / total_questions,
     }
