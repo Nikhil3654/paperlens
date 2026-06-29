@@ -81,3 +81,29 @@ def answer_from_evidence(
         "evidence_used": selected_chunks,
         "confidence": "medium",
     }
+
+def format_answer_for_display(answer: Dict) -> str:
+    """Format a grounded answer for notebook or app display."""
+    lines = []
+
+    lines.append("Answer")
+    lines.append(answer["answer"])
+
+    if answer["citations"]:
+        lines.append("")
+        lines.append("Citations")
+
+        seen = set()
+        for citation in answer["citations"]:
+            citation_text = citation["citation"]
+
+            if citation_text in seen:
+                continue
+
+            seen.add(citation_text)
+            lines.append(f"- {citation_text}")
+
+    lines.append("")
+    lines.append(f"Confidence: {answer['confidence']}")
+
+    return "\n".join(lines)
