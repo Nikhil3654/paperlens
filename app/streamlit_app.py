@@ -9,6 +9,7 @@ from src.pdf_reader import read_many_pdfs
 from src.reranker import load_reranker, rerank_chunks
 from src.search_index import build_search_index, embed_texts, load_embedding_model, search_chunks
 from src.text_chunks import make_text_chunks
+from src.hybrid_search import build_bm25_index, hybrid_search_chunks
 
 
 PAPERS = [
@@ -118,12 +119,14 @@ def build_index_from_papers(paper_inputs: list[dict]):
     embeddings = embed_texts([chunk["text"] for chunk in chunks], model=embedding_model)
     index = build_search_index(embeddings)
 
+    bm25_index = build_bm25_index(chunks)
     reranker = load_reranker()
 
     return {
         "chunks": chunks,
         "embedding_model": embedding_model,
         "index": index,
+        "bm25_index": bm25_index,
         "reranker": reranker,
         "paper_count": len(paper_inputs),
         "chunk_count": len(chunks),
@@ -199,14 +202,30 @@ with ask_tab:
 
     query = custom_question.strip() or selected_question
 
+    search_mode = st.radio(
+    "Search mode",
+    ["Hybrid search", "Semantic search"],
+    horizontal=True,
+    )
+
     if st.button("Search Papers", type="primary"):
-        retrieved = search_chunks(
-            query=query,
-            chunks=state["chunks"],
-            model=state["embedding_model"],
-            index=state["index"],
-            top_k=10,
-        )
+        if search_mode == "Hybrid search":
+            retrieved = hybrid_search_chunks(
+                query=query,
+                chunks=state["chunks"],
+                semantic_model=state["embedding_model"],
+                semantic_index=state["index"],
+                bm25_index=state["bm25_index"],
+                top_k=10,
+            )
+        else:
+            retrieved = search_chunks(
+                query=query,
+                chunks=state["chunks"],
+                model=state["embedding_model"],
+                index=state["index"],
+                top_k=10,
+            )
 
         reranked = rerank_chunks(
             query=query,
@@ -250,6 +269,13 @@ with ask_tab:
                 f"{rank}. {chunk['paper_title']} · page {chunk['page_number']}"
             ):
                 st.write(f"Search score: {chunk.get('search_score', 0):.3f}")
+
+                if "keyword_score" in chunk:
+                    st.write(f"Keyword score: {chunk.get('keyword_score', 0):.3f}")
+
+                if "hybrid_score" in chunk:
+                    st.write(f"Hybrid score: {chunk.get('hybrid_score', 0):.3f}")
+
                 st.write(f"Rerank score: {chunk.get('rerank_score', 0):.3f}")
                 st.write(chunk["text"])
 
