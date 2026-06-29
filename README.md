@@ -1,3 +1,15 @@
+---
+title: PaperLens
+emoji: 📄
+colorFrom: blue
+colorTo: indigo
+sdk: streamlit
+sdk_version: "1.36.0"
+python_version: "3.10"
+app_file: app.py
+pinned: false
+---
+
 # PaperLens
 
 PaperLens is a citation-grounded research assistant that answers questions from research papers using retrieval, reranking, and source-backed evidence.
