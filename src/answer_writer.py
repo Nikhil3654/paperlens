@@ -1,5 +1,5 @@
 from typing import Dict, List
-
+import re
 
 MIN_RERANK_SCORE = 1.0
 
@@ -76,7 +76,7 @@ def answer_from_evidence(
 
     return {
         "query": query,
-        "answer": write_evidence_summary(selected_chunks, max_chunks=max_chunks),
+        "answer": write_brief_answer(query, selected_chunks),
         "citations": citations,
         "evidence_used": selected_chunks,
         "confidence": "medium",
@@ -122,3 +122,68 @@ def evidence_strength(chunks: List[Dict]) -> str:
         return "moderate"
 
     return "weak"
+
+STOPWORDS = {
+    "what", "why", "how", "does", "do", "is", "are", "the", "a", "an", "in",
+    "on", "of", "to", "for", "and", "or", "with", "it", "this", "that"
+}
+
+
+def split_sentences(text: str) -> List[str]:
+    """Split text into readable sentences."""
+    return [sentence.strip() for sentence in re.split(r"(?<=[.!?])\s+", text) if sentence.strip()]
+
+
+def query_terms(query: str) -> set[str]:
+    """Extract useful query terms for lightweight extractive answering."""
+    words = re.findall(r"[a-zA-Z][a-zA-Z\-]+", query.lower())
+    return {word for word in words if word not in STOPWORDS and len(word) > 2}
+
+
+def sentence_relevance(sentence: str, terms: set[str]) -> int:
+    """Score a sentence by query-term overlap."""
+    sentence_lower = sentence.lower()
+    return sum(1 for term in terms if term in sentence_lower)
+
+
+def write_brief_answer(query: str, chunks: List[Dict], max_sentences: int = 4) -> str:
+    """Write a concise answer using only retrieved evidence."""
+    terms = query_terms(query)
+    candidates = []
+
+    for chunk in chunks[:4]:
+        citation = format_citation(chunk)
+
+        for sentence in split_sentences(chunk["text"]):
+            score = sentence_relevance(sentence, terms)
+
+            if score > 0:
+                candidates.append(
+                    {
+                        "sentence": sentence,
+                        "score": score,
+                        "citation": citation,
+                    }
+                )
+
+    if not candidates:
+        return write_evidence_summary(chunks, max_chunks=2)
+
+    candidates.sort(key=lambda item: item["score"], reverse=True)
+
+    selected = []
+    seen = set()
+
+    for candidate in candidates:
+        sentence = candidate["sentence"]
+
+        if sentence in seen:
+            continue
+
+        seen.add(sentence)
+        selected.append(f"{sentence} ({candidate['citation']})")
+
+        if len(selected) >= max_sentences:
+            break
+
+    return " ".join(selected)
