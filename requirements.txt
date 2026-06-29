@@ -1,3 +1,4 @@
+
 streamlit
 pypdf
 sentence-transformers
@@ -8,3 +9,7 @@ scikit-learn
 rank-bm25
 google-generativeai
 python-dotenv
+=======
+altair
+pandas
+streamlit
