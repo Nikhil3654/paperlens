@@ -323,7 +323,7 @@ with benchmark_tab:
 
     st.metric("Benchmark Questions", "15")
     st.metric("Top-1 Paper Routing", "100%")
-    st.metric("Strict Page-Level Citation Hit Rate", "73.3%")
+    st.metric("Strict Page-Level Citation Hit Rate", "86.7%")
 
     st.write(
         "PaperLens was evaluated on 15 manually written questions across five AI research papers. "
