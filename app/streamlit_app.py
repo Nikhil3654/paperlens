@@ -9,7 +9,7 @@ from src.pdf_reader import read_many_pdfs
 from src.reranker import load_reranker, rerank_chunks
 from src.search_index import build_search_index, embed_texts, load_embedding_model, search_chunks
 from src.text_chunks import make_text_chunks
-from src.hybrid_search import build_bm25_index, hybrid_search_chunks
+from src.hybrid_search import build_bm25_index, hybrid_search_chunks, rrf_hybrid_search_chunks
 
 
 PAPERS = [
@@ -245,7 +245,7 @@ with ask_tab:
     
     if st.button("Search Papers", type="primary"):
         if search_mode == "Hybrid search":
-            retrieved = hybrid_search_chunks(
+            retrieved = rrf_hybrid_search_chunks(
                 query=query,
                 chunks=searchable_chunks,
                 semantic_model=state["embedding_model"],
@@ -278,7 +278,8 @@ with ask_tab:
         if query not in st.session_state.question_history:
             st.session_state.question_history.insert(0, query)
             st.session_state.question_history = st.session_state.question_history[:5]
-        
+        if "rrf_score" in chunk:
+            st.write(f"RRF score: {chunk.get('rrf_score', 0):.4f}")
         from src.answer_writer import evidence_strength
 
         strength = evidence_strength(reranked)
@@ -291,7 +292,7 @@ with ask_tab:
             st.warning("Evidence strength: Moderate")
         else:
             st.error("Evidence strength: Weak")
-
+        
         st.write(answer["answer"])
 
         st.subheader("Citations")
