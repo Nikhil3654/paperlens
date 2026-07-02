@@ -111,3 +111,74 @@ def hybrid_search_chunks(
     scored_candidates.sort(key=lambda item: item["hybrid_score"], reverse=True)
 
     return scored_candidates[:top_k]
+
+def reciprocal_rank_fusion(
+    ranked_lists: List[List[Dict]],
+    top_k: int = 10,
+    rank_constant: int = 60,
+) -> List[Dict]:
+    """
+    Combine multiple ranked result lists using Reciprocal Rank Fusion.
+
+    RRF is more stable than directly blending raw scores from different systems.
+    """
+    fused = {}
+
+    for ranked_list in ranked_lists:
+        for rank, chunk in enumerate(ranked_list, start=1):
+            chunk_id = chunk["chunk_id"]
+
+            if chunk_id not in fused:
+                fused[chunk_id] = {
+                    "chunk": dict(chunk),
+                    "rrf_score": 0.0,
+                }
+
+            fused[chunk_id]["rrf_score"] += 1.0 / (rank_constant + rank)
+
+    results = []
+
+    for item in fused.values():
+        chunk = item["chunk"]
+        chunk["rrf_score"] = item["rrf_score"]
+        results.append(chunk)
+
+    results.sort(key=lambda item: item["rrf_score"], reverse=True)
+
+    return results[:top_k]
+
+
+def rrf_hybrid_search_chunks(
+    query: str,
+    chunks: List[Dict],
+    semantic_model,
+    semantic_index,
+    bm25_index: BM25Okapi,
+    top_k: int = 10,
+) -> List[Dict]:
+    """Search using FAISS + BM25 and combine rankings with RRF."""
+    from src.search_index import search_chunks
+
+    semantic_results = search_chunks(
+        query=query,
+        chunks=chunks,
+        model=semantic_model,
+        index=semantic_index,
+        top_k=min(top_k * 3, len(chunks)),
+    )
+
+    tokenized_query = tokenize(query)
+    bm25_scores = bm25_index.get_scores(tokenized_query)
+    bm25_indices = np.argsort(bm25_scores)[::-1][: min(top_k * 3, len(chunks))]
+
+    keyword_results = []
+
+    for index in bm25_indices:
+        chunk = dict(chunks[index])
+        chunk["keyword_score"] = float(bm25_scores[index])
+        keyword_results.append(chunk)
+
+    return reciprocal_rank_fusion(
+        ranked_lists=[semantic_results, keyword_results],
+        top_k=top_k,
+    )
