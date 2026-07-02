@@ -80,7 +80,7 @@ PaperLens was evaluated on 15 manually written questions across five AI research
 |---|---:|
 | Top-1 paper routing accuracy | 100% |
 | Top-5 paper routing accuracy | 100% |
-| Strict page-level citation hit rate | 73.3% |
+| Strict page-level citation hit rate | 86.7% |
 
 The strict page-level citation metric checks whether retrieved evidence appears on the expected source page. This is intentionally harder than just finding the correct paper.
 
@@ -161,6 +161,4 @@ PaperLens demonstrates an end-to-end RAG system with real engineering decisions:
 - Add downloadable answer reports
 - Add optional user-provided LLM key support while keeping the free no-key mode
 
-## Resume Bullet
 
-Built and deployed PaperLens, a citation-grounded RAG assistant over AI research papers using PDF parsing, FAISS vector search, BM25 hybrid retrieval, cross-encoder reranking, and retrieval evaluation; achieved 100% top-1 paper routing accuracy and 73.3% strict page-level citation hit rate across 15 benchmark questions.
