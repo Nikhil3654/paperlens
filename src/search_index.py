@@ -5,7 +5,7 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 
 
-DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 
 
 def load_embedding_model(model_name: str = DEFAULT_EMBEDDING_MODEL) -> SentenceTransformer:
