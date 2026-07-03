@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PaperLens</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <h1>PaperLens</h1>
+        <p>Ask research papers. Get cited answers.</p>
+      </div>
+      <div class="status" id="status">Preparing index...</div>
+    </header>
+
+    <section class="grid">
+      <aside class="panel">
+        <h2>Paper Library</h2>
+        <div id="paperList" class="paper-list"></div>
+
+        <h2>Search Mode</h2>
+        <label><input type="radio" name="searchMode" value="hybrid" checked /> Hybrid search</label>
+        <label><input type="radio" name="searchMode" value="semantic" /> Semantic search</label>
+
+        <h2>Benchmark</h2>
+        <div class="metric"><span>Top-1 paper routing</span><strong>100%</strong></div>
+        <div class="metric"><span>Strict page hit</span><strong>86.7%</strong></div>
+      </aside>
+
+      <section class="panel workspace">
+        <div class="samples">
+          <button data-question="What is self-attention and why is it useful?">Self-attention</button>
+          <button data-question="What is masked language modeling in BERT?">BERT MLM</button>
+          <button data-question="How does LoRA reduce the number of trainable parameters?">LoRA</button>
+          <button data-question="Why does chain-of-thought prompting improve reasoning?">Chain-of-thought</button>
+        </div>
+
+        <textarea id="question" placeholder="Ask about the papers..."></textarea>
+        <button id="searchButton" class="primary">Search Papers</button>
+
+        <section id="answerCard" class="answer-card hidden">
+          <div class="answer-head">
+            <h2>Answer</h2>
+            <span id="strengthBadge" class="badge">Evidence</span>
+          </div>
+          <p id="answerText"></p>
+
+          <h3>Citations</h3>
+          <div id="citations" class="citations"></div>
+
+          <h3>Evidence</h3>
+          <div id="evidence" class="evidence"></div>
+
+          <button id="downloadButton">Download answer report</button>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

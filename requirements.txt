@@ -1,4 +1,6 @@
-streamlit
+fastapi
+uvicorn
+python-multipart
 pypdf
 sentence-transformers
 faiss-cpu
@@ -6,5 +8,4 @@ numpy
 pandas
 scikit-learn
 rank-bm25
-google-generativeai
 python-dotenv
