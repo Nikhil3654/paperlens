@@ -1,20 +1,20 @@
-FROM python:3.13.5-slim
+FROM python:3.10-slim
 
-WORKDIR /app
+RUN useradd -m -u 1000 user
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+USER user
 
-COPY requirements.txt ./
-COPY src/ ./src/
+ENV HOME=/home/user
+ENV PATH=/home/user/.local/bin:$PATH
 
-RUN pip3 install -r requirements.txt
+WORKDIR /home/user/app
 
-EXPOSE 8501
+COPY --chown=user requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
 
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
+COPY --chown=user . .
 
-ENTRYPOINT ["streamlit", "run", "src/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+EXPOSE 7860
+
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "7860"]
