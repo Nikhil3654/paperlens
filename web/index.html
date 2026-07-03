@@ -8,51 +8,107 @@
 </head>
 <body>
   <main class="shell">
-    <header class="topbar">
+    <header class="hero">
       <div>
+        <p class="eyebrow">Citation-grounded research assistant</p>
         <h1>PaperLens</h1>
-        <p>Ask research papers. Get cited answers.</p>
+        <p class="hero-copy">Ask research papers. Get cited answers with retrievable evidence.</p>
       </div>
-      <div class="status" id="status">Preparing index...</div>
+      <div class="hero-status">
+        <span id="statusDot" class="status-dot"></span>
+        <span id="status">Preparing index...</span>
+      </div>
     </header>
 
-    <section class="grid">
-      <aside class="panel">
-        <h2>Paper Library</h2>
-        <div id="paperList" class="paper-list"></div>
+    <section class="layout">
+      <aside class="sidebar">
+        <section class="panel">
+          <div class="section-head">
+            <h2>Paper Library</h2>
+            <span class="tiny-label">Sources</span>
+          </div>
+          <div id="paperList" class="paper-list"></div>
+        </section>
 
-        <h2>Search Mode</h2>
-        <label><input type="radio" name="searchMode" value="hybrid" checked /> Hybrid search</label>
-        <label><input type="radio" name="searchMode" value="semantic" /> Semantic search</label>
+        <section class="panel">
+          <div class="section-head">
+            <h2>Search Mode</h2>
+          </div>
+          <div class="segmented">
+            <label>
+              <input type="radio" name="searchMode" value="hybrid" checked />
+              <span>Hybrid</span>
+            </label>
+            <label>
+              <input type="radio" name="searchMode" value="semantic" />
+              <span>Semantic</span>
+            </label>
+          </div>
+        </section>
 
-        <h2>Benchmark</h2>
-        <div class="metric"><span>Top-1 paper routing</span><strong>100%</strong></div>
-        <div class="metric"><span>Strict page hit</span><strong>86.7%</strong></div>
+        <section class="panel">
+          <div class="section-head">
+            <h2>Benchmark</h2>
+          </div>
+          <div class="metric">
+            <span>Top-1 paper routing</span>
+            <strong>100%</strong>
+          </div>
+          <div class="metric">
+            <span>Strict page hit</span>
+            <strong>86.7%</strong>
+          </div>
+        </section>
       </aside>
 
-      <section class="panel workspace">
-        <div class="samples">
-          <button data-question="What is self-attention and why is it useful?">Self-attention</button>
-          <button data-question="What is masked language modeling in BERT?">BERT MLM</button>
-          <button data-question="How does LoRA reduce the number of trainable parameters?">LoRA</button>
-          <button data-question="Why does chain-of-thought prompting improve reasoning?">Chain-of-thought</button>
-        </div>
+      <section class="workspace">
+        <section class="composer panel">
+          <div class="section-head">
+            <h2>Ask Papers</h2>
+            <span class="tiny-label">FAISS + BM25 + Reranker</span>
+          </div>
 
-        <textarea id="question" placeholder="Ask about the papers..."></textarea>
-        <button id="searchButton" class="primary">Search Papers</button>
+          <div class="samples">
+            <button data-question="What is self-attention and why is it useful?">Self-attention</button>
+            <button data-question="What is masked language modeling in BERT?">BERT MLM</button>
+            <button data-question="How does LoRA reduce the number of trainable parameters?">LoRA</button>
+            <button data-question="Why does chain-of-thought prompting improve reasoning?">Chain-of-thought</button>
+          </div>
 
-        <section id="answerCard" class="answer-card hidden">
+          <textarea id="question" placeholder="Ask about the indexed papers..."></textarea>
+
+          <div class="actions">
+            <button id="searchButton" class="primary">Search Papers</button>
+            <button id="clearButton">Clear</button>
+          </div>
+        </section>
+
+        <section id="loadingCard" class="panel loading-card hidden">
+          <div class="shimmer line wide"></div>
+          <div class="shimmer line"></div>
+          <div class="shimmer line short"></div>
+        </section>
+
+        <section id="answerCard" class="panel answer-card hidden">
           <div class="answer-head">
-            <h2>Answer</h2>
+            <div>
+              <p class="eyebrow">Grounded response</p>
+              <h2>Answer</h2>
+            </div>
             <span id="strengthBadge" class="badge">Evidence</span>
           </div>
-          <p id="answerText"></p>
 
-          <h3>Citations</h3>
-          <div id="citations" class="citations"></div>
+          <p id="answerText" class="answer-text"></p>
 
-          <h3>Evidence</h3>
-          <div id="evidence" class="evidence"></div>
+          <div class="subsection">
+            <h3>Citations</h3>
+            <div id="citations" class="citations"></div>
+          </div>
+
+          <div class="subsection">
+            <h3>Evidence</h3>
+            <div id="evidence" class="evidence"></div>
+          </div>
 
           <button id="downloadButton">Download answer report</button>
         </section>
