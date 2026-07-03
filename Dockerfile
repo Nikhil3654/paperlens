@@ -4,14 +4,14 @@ RUN useradd -m -u 1000 user
 
 USER user
 
-ENV HOME=/home/user 
-    PATH=/home/user/.local/bin:$PATH
+ENV HOME=/home/user
+ENV PATH=/home/user/.local/bin:$PATH
 
-WORKDIR $HOME/app
+WORKDIR /home/user/app
 
 COPY --chown=user requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && 
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=user . .
 
