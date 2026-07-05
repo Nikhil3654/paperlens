@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from api.paper_service import PaperLensService
 from api.schemas import SearchRequest
-
+from api.version import APP_NAME, __version__
 
 app = FastAPI(title="PaperLens API")
 
@@ -33,8 +33,8 @@ def health():
 @app.get("/api/version")
 def version():
     return {
-        "name": "PaperLens",
-        "version": "1.0.0",
+        "name": APP_NAME,
+        "version": __version__,
         "retrieval": "FAISS + BM25 + RRF",
         "embedding_model": "BAAI/bge-small-en-v1.5",
         "reranker": "cross-encoder/ms-marco-MiniLM-L-6-v2",
