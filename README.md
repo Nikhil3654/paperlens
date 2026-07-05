@@ -129,6 +129,17 @@ paperlens/
 - Pandas
 - NumPy
 
+## API Endpoints
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/` | GET | Serves the PaperLens web app |
+| `/api/health` | GET | Returns index status and collection stats |
+| `/api/version` | GET | Returns project version and model details |
+| `/api/papers` | GET | Lists indexed papers |
+| `/api/search` | POST | Searches selected papers and returns answer, citations, and evidence |
+| `/api/benchmark` | GET | Returns benchmark metrics |
+
 
 ## Demo Questions
 
