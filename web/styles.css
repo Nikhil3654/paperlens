@@ -456,4 +456,22 @@ textarea:focus {
   h1 {
     font-size: 44px;
   }
+
+  .helper-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+#copyStatus {
+  display: inline-block;
+  margin-top: 12px;
+}
+
+#copyStatus.hidden {
+  display: none;
+}
 }

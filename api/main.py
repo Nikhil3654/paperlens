@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -30,6 +30,18 @@ def health():
     return service.stats()
 
 
+@app.get("/api/version")
+def version():
+    return {
+        "name": "PaperLens",
+        "version": "1.0.0",
+        "retrieval": "FAISS + BM25 + RRF",
+        "embedding_model": "BAAI/bge-small-en-v1.5",
+        "reranker": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+        "deployment": "FastAPI Docker app on Hugging Face Spaces",
+    }
+
+
 @app.get("/api/papers")
 def papers():
     return {
@@ -39,8 +51,19 @@ def papers():
 
 @app.post("/api/search")
 def search(request: SearchRequest):
+    question = request.question.strip()
+
+    if not question:
+        raise HTTPException(status_code=400, detail="Question cannot be empty.")
+
+    if len(question) > 500:
+        raise HTTPException(status_code=400, detail="Question must be 500 characters or fewer.")
+
+    if request.paper_titles is not None and len(request.paper_titles) == 0:
+        raise HTTPException(status_code=400, detail="Select at least one paper.")
+
     return service.search(
-        question=request.question,
+        question=question,
         paper_titles=request.paper_titles,
         search_mode=request.search_mode,
     )

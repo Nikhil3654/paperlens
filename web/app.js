@@ -11,6 +11,8 @@ const strengthBadge = document.getElementById("strengthBadge");
 const citationsEl = document.getElementById("citations");
 const evidenceEl = document.getElementById("evidence");
 const searchButton = document.getElementById("searchButton");
+const charCounter = document.getElementById("charCounter");
+const copyStatus = document.getElementById("copyStatus");
 
 async function loadStatus() {
   const response = await fetch("/api/health");
@@ -47,25 +49,45 @@ function searchMode() {
   return document.querySelector("input[name='searchMode']:checked").value;
 }
 
+function updateCharCounter() {
+  charCounter.textContent = `${questionEl.value.length} / 500`;
+}
+
 function setLoading(isLoading) {
   searchButton.disabled = isLoading;
-  searchButton.textContent = isLoading ? "Searching..." : "Search Papers";
+  searchButton.textContent = isLoading ? "Finding evidence..." : "Find Evidence";
 
   if (isLoading) {
     loadingCard.classList.remove("hidden");
     answerCard.classList.add("hidden");
-    statusEl.textContent = "Searching...";
+    statusEl.textContent = "Reranking passages...";
     statusDot.classList.remove("ready");
   } else {
     loadingCard.classList.add("hidden");
   }
 }
 
+function showError(message) {
+  answerCard.classList.remove("hidden");
+  answerText.textContent = message;
+  strengthBadge.className = "badge weak";
+  strengthBadge.textContent = "Evidence: unavailable";
+  citationsEl.innerHTML = "";
+  evidenceEl.innerHTML = "";
+}
+
 async function search() {
   const question = questionEl.value.trim();
+  const papers = selectedPapers();
 
   if (!question) {
     questionEl.focus();
+    showError("Ask a question to begin.");
+    return;
+  }
+
+  if (papers.length === 0) {
+    showError("Select at least one paper to search.");
     return;
   }
 
@@ -79,19 +101,21 @@ async function search() {
       },
       body: JSON.stringify({
         question,
-        paper_titles: selectedPapers(),
+        paper_titles: papers,
         search_mode: searchMode(),
       }),
     });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Search failed.");
+    }
 
     const data = await response.json();
     lastAnswer = data;
     renderAnswer(data);
   } catch (error) {
-    answerCard.classList.remove("hidden");
-    answerText.textContent = "Something went wrong while searching. Please try again.";
-    citationsEl.innerHTML = "";
-    evidenceEl.innerHTML = "";
+    showError(error.message || "Something went wrong while searching. Please try again.");
   } finally {
     setLoading(false);
     await loadStatus();
@@ -112,6 +136,10 @@ function renderAnswer(data) {
   strengthBadge.textContent = `Evidence: ${data.evidence_strength}`;
 
   citationsEl.innerHTML = "";
+  if (!data.citations.length) {
+    citationsEl.innerHTML = `<div class="citation-card">No citations found for this question.</div>`;
+  }
+
   data.citations.forEach((citation) => {
     const card = document.createElement("div");
     card.className = "citation-card";
@@ -153,24 +181,10 @@ function renderAnswer(data) {
   });
 }
 
-searchButton.addEventListener("click", search);
+function answerReport() {
+  if (!lastAnswer) return "";
 
-document.getElementById("clearButton").addEventListener("click", () => {
-  questionEl.value = "";
-  questionEl.focus();
-});
-
-document.querySelectorAll("[data-question]").forEach((button) => {
-  button.addEventListener("click", () => {
-    questionEl.value = button.dataset.question;
-    questionEl.focus();
-  });
-});
-
-document.getElementById("downloadButton").addEventListener("click", () => {
-  if (!lastAnswer) return;
-
-  const text = [
+  return [
     `Question: ${lastAnswer.question}`,
     "",
     "Answer:",
@@ -186,6 +200,43 @@ document.getElementById("downloadButton").addEventListener("click", () => {
       `${index + 1}. ${chunk.paper_title}, page ${chunk.page_number}\n${chunk.text}`
     )),
   ].join("\n");
+}
+
+searchButton.addEventListener("click", search);
+
+questionEl.addEventListener("input", updateCharCounter);
+
+document.getElementById("clearButton").addEventListener("click", () => {
+  questionEl.value = "";
+  updateCharCounter();
+  questionEl.focus();
+});
+
+document.querySelectorAll("[data-question]").forEach((button) => {
+  button.addEventListener("click", () => {
+    questionEl.value = button.dataset.question;
+    updateCharCounter();
+    questionEl.focus();
+  });
+});
+
+document.getElementById("copyButton").addEventListener("click", async () => {
+  const text = answerReport();
+
+  if (!text) return;
+
+  await navigator.clipboard.writeText(text);
+  copyStatus.classList.remove("hidden");
+
+  setTimeout(() => {
+    copyStatus.classList.add("hidden");
+  }, 1800);
+});
+
+document.getElementById("downloadButton").addEventListener("click", () => {
+  const text = answerReport();
+
+  if (!text) return;
 
   const blob = new Blob([text], { type: "text/plain" });
   const url = URL.createObjectURL(blob);
@@ -198,5 +249,6 @@ document.getElementById("downloadButton").addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
+updateCharCounter();
 loadStatus();
 loadPapers();

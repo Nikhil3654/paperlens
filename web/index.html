@@ -71,14 +71,22 @@
           <div class="samples">
             <button data-question="What is self-attention and why is it useful?">Self-attention</button>
             <button data-question="What is masked language modeling in BERT?">BERT MLM</button>
+            <button data-question="What is next sentence prediction in BERT?">BERT NSP</button>
+            <button data-question="How does retrieval augmented generation use external knowledge?">RAG</button>
+            <button data-question="What is the role of the retriever in RAG?">Retriever</button>
             <button data-question="How does LoRA reduce the number of trainable parameters?">LoRA</button>
+            <button data-question="What parameters are trained in LoRA?">LoRA parameters</button>
             <button data-question="Why does chain-of-thought prompting improve reasoning?">Chain-of-thought</button>
           </div>
 
-          <textarea id="question" placeholder="Ask about the indexed papers..."></textarea>
+          <textarea id="question" maxlength="500" placeholder="Ask about the indexed papers..."></textarea>
+          <div class="helper-row">
+            <span>PaperLens answers only from the selected papers.</span>
+            <span id="charCounter">0 / 500</span>
+          </div>
 
           <div class="actions">
-            <button id="searchButton" class="primary">Search Papers</button>
+            <button id="searchButton" class="primary">Find Evidence</button>
             <button id="clearButton">Clear</button>
           </div>
         </section>
@@ -110,7 +118,11 @@
             <div id="evidence" class="evidence"></div>
           </div>
 
-          <button id="downloadButton">Download answer report</button>
+          <div class="actions">
+            <button id="copyButton">Copy answer</button>
+            <button id="downloadButton">Download answer report</button>
+          </div>
+          <p id="copyStatus" class="tiny-label hidden">Copied answer.</p>
         </section>
       </section>
     </section>
