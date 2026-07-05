@@ -129,6 +129,20 @@ paperlens/
 - Pandas
 - NumPy
 
+
+## Demo Questions
+
+Try these questions in the live app:
+
+- What is self-attention and why is it useful?
+- What is masked language modeling in BERT?
+- What is next sentence prediction in BERT?
+- How does retrieval augmented generation use external knowledge?
+- What is the role of the retriever in RAG?
+- How does LoRA reduce the number of trainable parameters?
+- What parameters are trained in LoRA?
+- Why does chain-of-thought prompting improve reasoning?
+
 ## Why This Project Matters
 
 PaperLens demonstrates an end-to-end RAG system with real engineering decisions:
