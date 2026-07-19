@@ -9,9 +9,9 @@ pinned: false
 
 # PaperLens
 
-PaperLens is a citation-grounded research assistant that answers questions from research papers using retrieval, reranking, and source-backed evidence.
+PaperLens is a citation-grounded research assistant for technical papers. It answers questions from selected research papers using hybrid retrieval, reranking, and source-backed evidence.
 
-The project is built to show a practical RAG workflow, not just a PDF chatbot. It focuses on transparent retrieval, page-level citations, evidence strength, and measurable retrieval quality.
+The project is designed as a practical RAG system, not just a PDF chatbot. It focuses on transparent retrieval, page-level citations, evidence strength, benchmarked retrieval quality, and a custom deployed web experience.
 
 ## Live Demo
 
@@ -19,19 +19,26 @@ Hugging Face Space:
 
 https://huggingface.co/spaces/sc-ss/paperlens
 
-## What PaperLens Does
+## Current Features
 
-- Reads research papers from PDF files
-- Supports the built-in sample paper collection
-- Supports user-uploaded PDFs
-- Splits papers into page-aware searchable chunks
-- Builds semantic search with Sentence Transformers and FAISS
-- Adds BM25 keyword search for hybrid retrieval
-- Reranks evidence with a cross-encoder
-- Produces citation-grounded answers from retrieved evidence
-- Shows citations, page numbers, evidence chunks, and relevance scores
-- Warns when uploaded PDFs may have poor text extraction
-- Includes benchmark results for retrieval quality
+- Custom FastAPI backend
+- Custom HTML, CSS, and JavaScript frontend
+- Docker deployment on Hugging Face Spaces
+- Built-in sample paper collection
+- Paper source filtering
+- Semantic search with Sentence Transformers and FAISS
+- Keyword search with BM25
+- Hybrid retrieval using Reciprocal Rank Fusion
+- Cross-encoder reranking
+- Citation-grounded answer generation
+- Evidence strength labels
+- Citation cards with page numbers
+- Evidence cards with retrieval and reranking scores
+- Recent question history in the browser
+- Random sample question button
+- Select all and clear paper filters
+- Copy answer button
+- Downloadable answer report
 
 ## Paper Collection
 
@@ -43,32 +50,42 @@ The default demo uses five public AI research papers:
 - LoRA
 - Chain-of-Thought Prompting
 
-The app can also index user-uploaded PDFs during a session.
-
 ## Architecture
 
 ```text
-PDFs
+PDF papers
   -> page-level text extraction
-  -> page-aware chunks
+  -> page-aware chunking
   -> Sentence Transformer embeddings
   -> FAISS semantic search
   -> BM25 keyword search
-  -> hybrid retrieval
+  -> Reciprocal Rank Fusion
   -> cross-encoder reranking
   -> citation-grounded answer
+  -> custom web UI
 ```
 
 ## Retrieval Modes
 
-PaperLens supports two retrieval modes:
-
 | Mode | Description |
 |---|---|
 | Semantic search | Uses dense embeddings and FAISS to find meaning-based matches |
-| Hybrid search | Combines FAISS semantic search with BM25 keyword search before reranking |
+| Hybrid search | Combines FAISS semantic search and BM25 keyword search with Reciprocal Rank Fusion |
 
-Hybrid search is useful for technical papers because it can preserve exact terms, acronyms, and method names while still finding semantically related evidence.
+Hybrid search is the default because technical papers often contain exact method names, acronyms, and equations where keyword matching helps semantic retrieval.
+
+## Model Choices
+
+| Component | Model / Tool |
+|---|---|
+| Embeddings | BAAI/bge-small-en-v1.5 |
+| Vector search | FAISS |
+| Keyword search | BM25 |
+| Fusion | Reciprocal Rank Fusion |
+| Reranker | cross-encoder/ms-marco-MiniLM-L-6-v2 |
+| Backend | FastAPI |
+| Frontend | HTML, CSS, JavaScript |
+| Deployment | Hugging Face Spaces Docker |
 
 ## Evaluation
 
@@ -82,20 +99,63 @@ PaperLens was evaluated on 15 manually written questions across five AI research
 
 The strict page-level citation metric checks whether retrieved evidence appears on the expected source page. This is intentionally harder than just finding the correct paper.
 
-## Example Questions
+## Demo Questions
+
+Try these in the live app:
 
 - What is self-attention and why is it useful?
 - What is masked language modeling in BERT?
+- What is next sentence prediction in BERT?
 - How does retrieval augmented generation use external knowledge?
+- What is the role of the retriever in RAG?
 - How does LoRA reduce the number of trainable parameters?
+- What parameters are trained in LoRA?
 - Why does chain-of-thought prompting improve reasoning?
+
+## API Endpoints
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/` | GET | Serves the PaperLens web app |
+| `/api/health` | GET | Returns index status and collection stats |
+| `/api/version` | GET | Returns project version and model details |
+| `/api/papers` | GET | Lists indexed papers |
+| `/api/search` | POST | Searches selected papers and returns answer, citations, and evidence |
+| `/api/benchmark` | GET | Returns benchmark metrics |
+
+## Run Locally
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Start the app:
+
+```bash
+uvicorn api.main:app --host 0.0.0.0 --port 7860
+```
+
+Open:
+
+```text
+http://localhost:7860
+```
 
 ## Project Structure
 
 ```text
 paperlens/
-  app/
-    streamlit_app.py
+  api/
+    main.py
+    paper_service.py
+    schemas.py
+    version.py
+  web/
+    index.html
+    styles.css
+    app.js
   src/
     pdf_reader.py
     text_chunks.py
@@ -111,77 +171,39 @@ paperlens/
   assets/
     screenshots/
     diagrams/
+  Dockerfile
   requirements.txt
-  app.py
   README.md
 ```
 
-## Tech Stack
+## What I Learned
 
-- Python
-- Streamlit
-- Hugging Face Spaces
-- pypdf
-- Sentence Transformers
-- FAISS
-- BM25
-- Cross-encoder reranking
-- Pandas
-- NumPy
-
-## API Endpoints
-
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/` | GET | Serves the PaperLens web app |
-| `/api/health` | GET | Returns index status and collection stats |
-| `/api/version` | GET | Returns project version and model details |
-| `/api/papers` | GET | Lists indexed papers |
-| `/api/search` | POST | Searches selected papers and returns answer, citations, and evidence |
-| `/api/benchmark` | GET | Returns benchmark metrics |
-
-
-## Demo Questions
-
-Try these questions in the live app:
-
-- What is self-attention and why is it useful?
-- What is masked language modeling in BERT?
-- What is next sentence prediction in BERT?
-- How does retrieval augmented generation use external knowledge?
-- What is the role of the retriever in RAG?
-- How does LoRA reduce the number of trainable parameters?
-- What parameters are trained in LoRA?
-- Why does chain-of-thought prompting improve reasoning?
-
-## Why This Project Matters
-
-PaperLens demonstrates an end-to-end RAG system with real engineering decisions:
-
-- PDF ingestion with page metadata
-- Chunking strategy for citation reliability
-- Semantic retrieval using embeddings
-- Keyword retrieval using BM25
-- Hybrid retrieval for stronger evidence selection
-- Cross-encoder reranking
-- Evidence-based answer generation
-- Manual retrieval evaluation
+- Built an end-to-end RAG pipeline from PDFs to cited answers
+- Preserved page metadata for citation reliability
+- Compared embedding models using retrieval benchmarks
+- Improved retrieval with FAISS, BM25, RRF, and reranking
+- Deployed a custom FastAPI Docker app on Hugging Face Spaces
+- Built a more dynamic frontend without relying on Streamlit
+- Added practical UX features such as source filters, recent questions, and downloadable reports
 
 ## Limitations
 
 - Scanned or image-based PDFs may need OCR.
-- Free CPU deployment can be slower on first startup.
-- Uploaded PDFs are indexed during the current app session.
+- Free CPU deployment can be slower during cold starts.
+- The current default collection is limited to five papers.
 - Page-level evaluation is strict, so useful evidence may sometimes appear on a nearby page.
-- The default answer writer is extractive and does not require a paid LLM API.
+- The answer writer is extractive and does not require a paid LLM API.
 
 ## Future Improvements
 
 - Add OCR support for scanned PDFs
+- Add upload mode to the FastAPI interface
 - Save and load prebuilt search artifacts for faster startup
 - Expand the benchmark from 15 to 30 questions
-- Add side-by-side semantic vs hybrid retrieval evaluation
-- Add downloadable answer reports
+- Add side-by-side semantic vs hybrid retrieval comparison
+- Add section-aware citations such as paper, page, and section name
 - Add optional user-provided LLM key support while keeping the free no-key mode
 
+## Resume Bullet
 
+Built and deployed PaperLens, a citation-grounded RAG assistant over AI research papers using PDF parsing, FAISS vector search, BM25 keyword retrieval, Reciprocal Rank Fusion, cross-encoder reranking, and retrieval evaluation; achieved 100% top-1 paper routing accuracy and 86.7% strict page-level citation hit rate across 15 benchmark questions.
