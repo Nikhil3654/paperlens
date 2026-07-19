@@ -474,4 +474,66 @@ textarea:focus {
 #copyStatus.hidden {
   display: none;
 }
+
+.mini-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mini-actions button,
+.recent-question {
+  font-size: 13px;
+  padding: 8px 10px;
+}
+
+.side-note {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 12px 0 0;
+}
+
+.recent-list {
+  display: grid;
+  gap: 8px;
+}
+
+.recent-question {
+  width: 100%;
+  text-align: left;
+  color: var(--text);
+  background: var(--surface-soft);
+}
+
+.helper-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.loading-title {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.footer {
+  margin-top: 26px;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+#copyStatus {
+  display: inline-block;
+  margin-top: 12px;
+}
+
+#copyStatus.hidden {
+  display: none;
+}
+
 }

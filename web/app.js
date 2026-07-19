@@ -1,5 +1,16 @@
 let lastAnswer = null;
 
+const sampleQuestions = [
+  "What is self-attention and why is it useful?",
+  "What is masked language modeling in BERT?",
+  "What is next sentence prediction in BERT?",
+  "How does retrieval augmented generation use external knowledge?",
+  "What is the role of the retriever in RAG?",
+  "How does LoRA reduce the number of trainable parameters?",
+  "What parameters are trained in LoRA?",
+  "Why does chain-of-thought prompting improve reasoning?",
+];
+
 const statusEl = document.getElementById("status");
 const statusDot = document.getElementById("statusDot");
 const paperListEl = document.getElementById("paperList");
@@ -13,6 +24,39 @@ const evidenceEl = document.getElementById("evidence");
 const searchButton = document.getElementById("searchButton");
 const charCounter = document.getElementById("charCounter");
 const copyStatus = document.getElementById("copyStatus");
+const recentQuestionsEl = document.getElementById("recentQuestions");
+
+function recentQuestions() {
+  return JSON.parse(localStorage.getItem("paperlensRecentQuestions") || "[]");
+}
+
+function saveRecentQuestion(question) {
+  const next = [question, ...recentQuestions().filter((item) => item !== question)].slice(0, 6);
+  localStorage.setItem("paperlensRecentQuestions", JSON.stringify(next));
+  renderRecentQuestions();
+}
+
+function renderRecentQuestions() {
+  const questions = recentQuestions();
+  recentQuestionsEl.innerHTML = "";
+
+  if (!questions.length) {
+    recentQuestionsEl.innerHTML = `<p class="side-note">Your recent questions will appear here.</p>`;
+    return;
+  }
+
+  questions.forEach((question) => {
+    const button = document.createElement("button");
+    button.className = "recent-question";
+    button.textContent = question;
+    button.addEventListener("click", () => {
+      questionEl.value = question;
+      updateCharCounter();
+      questionEl.focus();
+    });
+    recentQuestionsEl.appendChild(button);
+  });
+}
 
 async function loadStatus() {
   const response = await fetch("/api/health");
@@ -43,6 +87,12 @@ async function loadPapers() {
 
 function selectedPapers() {
   return Array.from(paperListEl.querySelectorAll("input:checked")).map((input) => input.value);
+}
+
+function setAllPapers(checked) {
+  paperListEl.querySelectorAll("input").forEach((input) => {
+    input.checked = checked;
+  });
 }
 
 function searchMode() {
@@ -113,6 +163,7 @@ async function search() {
 
     const data = await response.json();
     lastAnswer = data;
+    saveRecentQuestion(question);
     renderAnswer(data);
   } catch (error) {
     showError(error.message || "Something went wrong while searching. Please try again.");
@@ -153,7 +204,6 @@ function renderAnswer(data) {
   evidenceEl.innerHTML = "";
   data.evidence.forEach((chunk, index) => {
     const scores = [];
-
     scores.push(`Search ${Number(chunk.search_score || 0).toFixed(3)}`);
 
     if (chunk.keyword_score !== null && chunk.keyword_score !== undefined) {
@@ -186,6 +236,7 @@ function answerReport() {
 
   return [
     `Question: ${lastAnswer.question}`,
+    `Search mode: ${searchMode()}`,
     "",
     "Answer:",
     lastAnswer.answer,
@@ -206,10 +257,31 @@ searchButton.addEventListener("click", search);
 
 questionEl.addEventListener("input", updateCharCounter);
 
+questionEl.addEventListener("keydown", (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+    search();
+  }
+});
+
 document.getElementById("clearButton").addEventListener("click", () => {
   questionEl.value = "";
   updateCharCounter();
   questionEl.focus();
+});
+
+document.getElementById("randomButton").addEventListener("click", () => {
+  const question = sampleQuestions[Math.floor(Math.random() * sampleQuestions.length)];
+  questionEl.value = question;
+  updateCharCounter();
+  questionEl.focus();
+});
+
+document.getElementById("selectAllPapers").addEventListener("click", () => {
+  setAllPapers(true);
+});
+
+document.getElementById("clearPapers").addEventListener("click", () => {
+  setAllPapers(false);
 });
 
 document.querySelectorAll("[data-question]").forEach((button) => {
@@ -250,5 +322,6 @@ document.getElementById("downloadButton").addEventListener("click", () => {
 });
 
 updateCharCounter();
+renderRecentQuestions();
 loadStatus();
 loadPapers();

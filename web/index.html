@@ -27,6 +27,12 @@
             <h2>Paper Library</h2>
             <span class="tiny-label">Sources</span>
           </div>
+
+          <div class="mini-actions">
+            <button id="selectAllPapers">Select all</button>
+            <button id="clearPapers">Clear</button>
+          </div>
+
           <div id="paperList" class="paper-list"></div>
         </section>
 
@@ -44,6 +50,7 @@
               <span>Semantic</span>
             </label>
           </div>
+          <p class="side-note">Hybrid combines semantic search, keyword search, and reranking.</p>
         </section>
 
         <section class="panel">
@@ -57,6 +64,15 @@
           <div class="metric">
             <span>Strict page hit</span>
             <strong>86.7%</strong>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <h2>Recent</h2>
+          </div>
+          <div id="recentQuestions" class="recent-list">
+            <p class="side-note">Your recent questions will appear here.</p>
           </div>
         </section>
       </aside>
@@ -80,18 +96,21 @@
           </div>
 
           <textarea id="question" maxlength="500" placeholder="Ask about the indexed papers..."></textarea>
+
           <div class="helper-row">
-            <span>PaperLens answers only from the selected papers.</span>
+            <span>PaperLens answers only from selected papers. Press Ctrl+Enter to search.</span>
             <span id="charCounter">0 / 500</span>
           </div>
 
           <div class="actions">
             <button id="searchButton" class="primary">Find Evidence</button>
+            <button id="randomButton">Random question</button>
             <button id="clearButton">Clear</button>
           </div>
         </section>
 
         <section id="loadingCard" class="panel loading-card hidden">
+          <div class="loading-title">Finding evidence...</div>
           <div class="shimmer line wide"></div>
           <div class="shimmer line"></div>
           <div class="shimmer line short"></div>
@@ -126,6 +145,10 @@
         </section>
       </section>
     </section>
+
+    <footer class="footer">
+      Built with FastAPI, FAISS, BM25, Sentence Transformers, and cross-encoder reranking.
+    </footer>
   </main>
 
   <script src="/static/app.js"></script>
