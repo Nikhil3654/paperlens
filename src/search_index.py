@@ -54,6 +54,8 @@ def search_chunks(
     top_k: int = 5,
 ) -> List[Dict]:
     """Search the chunk index and return the most relevant chunks."""
+    if index.ntotal != len(chunks):
+        raise ValueError("FAISS index and chunks are misaligned")
     query_embedding = embed_texts([query], model=model)
     scores, indices = index.search(query_embedding, top_k)
 

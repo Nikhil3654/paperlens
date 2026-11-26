@@ -70,7 +70,11 @@ def evaluate_retrieval(
 
         has_paper_hit = paper_hit(final_results, expected_paper)
         has_page_hit = page_hit(final_results, expected_pages)
-        has_full_hit = has_paper_hit and has_page_hit
+        has_full_hit = any(
+            result.get("paper_title") == expected_paper
+            and result.get("page_number") in expected_pages
+            for result in final_results
+        )
 
         best_result = final_results[0] if final_results else {}
 

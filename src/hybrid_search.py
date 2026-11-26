@@ -44,6 +44,9 @@ def hybrid_search_chunks(
     """
     from src.search_index import search_chunks
 
+    if semantic_index.ntotal != len(chunks) or len(bm25_index.doc_len) != len(chunks):
+        raise ValueError("Search indexes and chunks are misaligned")
+
     semantic_results = search_chunks(
         query=query,
         chunks=chunks,
@@ -158,6 +161,9 @@ def rrf_hybrid_search_chunks(
 ) -> List[Dict]:
     """Search using FAISS + BM25 and combine rankings with RRF."""
     from src.search_index import search_chunks
+
+    if semantic_index.ntotal != len(chunks) or len(bm25_index.doc_len) != len(chunks):
+        raise ValueError("Search indexes and chunks are misaligned")
 
     semantic_results = search_chunks(
         query=query,

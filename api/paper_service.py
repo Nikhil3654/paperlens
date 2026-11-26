@@ -74,6 +74,8 @@ class PaperLensService:
 
         self.state = {
             "chunks": chunks,
+            "embeddings": embeddings,
+            "scope_cache": {},
             "embedding_model": embedding_model,
             "index": index,
             "bm25_index": bm25_index,
@@ -111,24 +113,45 @@ class PaperLensService:
             "reranker": "cross-encoder/ms-marco-MiniLM-L-6-v2",
         }
 
+    def _retrieval_scope(self, paper_titles=None):
+        """Return chunks and indexes that share the same document order."""
+        chunks = self.state["chunks"]
+        if paper_titles is None:
+            return chunks, self.state["index"], self.state["bm25_index"]
+
+        if not paper_titles:
+            raise ValueError("Select at least one paper")
+
+        selected = set(paper_titles)
+        available = {chunk["paper_title"] for chunk in chunks}
+        unknown = selected - available
+        if unknown:
+            raise ValueError(f"Unknown paper: {', '.join(sorted(unknown))}")
+
+        key = tuple(sorted(selected))
+        cache = self.state.setdefault("scope_cache", {})
+        if key not in cache:
+            positions = [i for i, chunk in enumerate(chunks)
+                         if chunk["paper_title"] in selected]
+            scoped_chunks = [chunks[i] for i in positions]
+            scoped_embeddings = self.state["embeddings"][positions]
+            scoped_index = build_search_index(scoped_embeddings)
+            scoped_bm25 = build_bm25_index(scoped_chunks)
+            cache[key] = (scoped_chunks, scoped_index, scoped_bm25)
+        return cache[key]
+
     def search(self, question, paper_titles=None, search_mode="hybrid"):
         if not self.ready():
             self.build_sample_index()
 
-        chunks = self.state["chunks"]
-
-        if paper_titles:
-            chunks = [
-                chunk for chunk in chunks
-                if chunk["paper_title"] in paper_titles
-            ]
+        chunks, index, bm25_index = self._retrieval_scope(paper_titles)
 
         if search_mode == "semantic":
             retrieved = search_chunks(
                 query=question,
                 chunks=chunks,
                 model=self.state["embedding_model"],
-                index=self.state["index"],
+                index=index,
                 top_k=10,
             )
         else:
@@ -136,8 +159,8 @@ class PaperLensService:
                 query=question,
                 chunks=chunks,
                 semantic_model=self.state["embedding_model"],
-                semantic_index=self.state["index"],
-                bm25_index=self.state["bm25_index"],
+                semantic_index=index,
+                bm25_index=bm25_index,
                 top_k=10,
             )
 
